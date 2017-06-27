@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+<meta name="generator" content="PSPad editor" />
+<meta name="Author" content="Poki Kuo" />
+<meta name="Keywords" content="" />
+<meta name="Description" content="" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta http-equiv="Content-Script-Type" content="text/javascript" />
+<meta http-equiv="Content-Style-Type" content="text/css" />
+<script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script>
+<title>PD_tree_table</title>
+<style type="text/css">
+ul, li {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+#qaContent {
+	width: 500px;
+}
+#qaContent h3 {
+	width: 500px;
+	height: 22px;
+	text-indent: -9999px;
+}
+#qaContent h3.qa_group_1 {
+	background: url(qa_group_1.gif) no-repeat;
+}
+#qaContent h3.qa_group_2 {
+	background: url(qa_group_2.gif) no-repeat;
+}
+#qaContent ul.accordionPart {
+	margin: 10px 10px 50px 30px;
+}
+#qaContent ul.accordionPart li {
+	border-bottom: solid 1px #e3e3e3;
+	padding-bottom: 12px;
+	margin-top: 12px;
+}
+#qaContent ul.accordionPart li .qa_title {
+	background: url(icon_q_a.gif) no-repeat 0px 3px;
+	padding-left: 28px;
+	color: #1186ec;
+	cursor: pointer;
+}
+#qaContent ul.accordionPart li .qa_title_on {
+	text-decoration: underline;
+}
+#qaContent ul.accordionPart li .qa_content {
+	margin: 6px 0 0;
+	background: url(icon_q_a.gif) no-repeat 0px -24px;
+	padding-left: 28px;
+	color: #666;
+}
+</style>
+<script type="text/javascript">
+	$(function(){
+		// 幫 div.qa_title 加上 hover 及 click 事件
+		// 同時把兄弟元素 div.qa_content 隱藏起來
+		$('#qaContent ul.accordionPart li div.qa_title').hover(function(){
+			$(this).addClass('qa_title_on');
+		}, function(){
+			$(this).removeClass('qa_title_on');
+		}).click(function(){
+			// 當點到標題時，hide or unhide
+			$(this).next('div.qa_content').slideToggle();
+		}).siblings('div.qa_content').hide();
+
+		// 全部展開
+		$('#qaContent .qa_showall').click(function(){
+			$('#qaContent ul.accordionPart li div.qa_content').slideDown();
+			return false;
+		});
+
+		// 全部隱藏
+		$('#qaContent .qa_hideall').click(function(){
+			$('#qaContent ul.accordionPart li div.qa_content').slideUp();
+			return false;
+		});
+
+		// 關閉
+		$('#qaContent .close_qa').click(function(){
+			$(this).parents('.qa_content').prev().click();
+			return false;
+		});
+	});
+</script>
+</head>
+
+<body>
+
+<div id="qaContent">
+	<a href="#" class="qa_showall">Expand all</a> | <a href="#" class="qa_hideall">Hide all</a>
+  
+
+
+
+<script type="text/javascript">
+var i=1
+for (i=1;i<=2;i++)
+{
+
+document.write("<h3 class=\"qa_group_" + i + "\">")
+document.write("GGGGGGG1")
+document.write("</h3>")
+document.write("<ul class=\"accordionPart\">")
+document.write("<li>")
+document.write("<div class=\"qa_title\"> TTTTT11111")
+document.write("</div>")
+document.write("<div class=\"qa_content\">")
+document.write("AAAAAA1111111")
+document.write("<br />")
+document.write("AAAAAA22222222")
+document.write("<a href=\"#\" class=\"close_qa\">")
+document.write("Hide")
+document.write("</a>")
+document.write("</div>")
+document.write("</li>")
+document.write("</ul>")
+document.write("The number is " + i)
+document.write("<br />")
+}
+</script>  
+ 
+</body>
+</html>
+
+
