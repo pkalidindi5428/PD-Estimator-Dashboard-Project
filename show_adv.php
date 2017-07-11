@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="generator" content="PSPad editor" />
-<meta name="Author" content="Poki Kuo" />
+<meta name="Author" content="Prasant Kalidindi" />
 <meta name="Keywords" content="" />
 <meta name="Description" content="" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
