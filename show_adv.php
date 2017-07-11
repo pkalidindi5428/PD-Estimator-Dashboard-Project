@@ -157,9 +157,9 @@ ul, li {
 <body>
 
 <form>
-History
+History/Filter
   <select name='history'>
-    <option value=''>-- Select a record --</optoin>
+      <option value=''>-- Select a record --</option>n>
 <?
 $privatedir = '/var/www/pd_estimation/uploads/'.$login->getUsername().'/';
 mkdir($privatedir, 0777);
@@ -171,11 +171,16 @@ foreach($files as $item){
 }
 ?>
   </select>
+    <select name='filter'>
+        <option value=''>-- Select a filter --</option>n>
+        echo "<option value= 1 >"Test Area"</option>";
+        echo "<option value= 2 >"Server Type"</option>";
+        echo "<option value= 3 >"Supportive OSes"</option>";
+        echo "<option value= 4 >"Automation/Manual"</option>";
+    </select>
   <input type='submit' value='Apply'>
 </form>
 <br>
-
-
 
 
 <div id="qaContent">
@@ -213,149 +218,417 @@ $sheetData = $objPHPExcel->getActiveSheet()->toArray(null,true,true,true);
 //$common_path = $sheetData[2][A];
 //print("common -->".$common_path."<br>");
 
-
+//********************************algorithm*******************************************************************
 /** collect phase/pd, feature/pd**/
   $phase = "";
   $a=-1;
-  $p=-1;  
-  for ( $i=2; $i <= count($sheetData); $i++){
-            $path= explode("\\",$sheetData[$i][A]);
-            //print("project -->".$path[3]."<br>");
-            //echo strcmp("$phase","$path[5]");
-            //if (array_search($path[3], $project)) {
-            //  print("project -->".$path[3]."<br>");  
-            //}
-            
-            if ( in_array($path[3], $project) ){
-               //same project
-               $p = array_search($path[3], $project); 
-            }else{
+  $p=-1;
+  $c=-1;
+if($_GET['filter'] == 1 || $_GET['filter'] == 2 || $_GET['filter'] == 3 || $_GET['filter'] == 4){
+    $filter = 1;
+}
+else
+    $filter = 0;
+  if($filter) {
+      for ($i = 2; $i <= count($sheetData); $i++) {
+          $path = explode("\\", $sheetData[$i][A]);
+          //print("project -->".$path[3]."<br>");
+          //echo strcmp("$phase","$path[5]");
+          //if (array_search($path[3], $project)) {
+          //  print("project -->".$path[3]."<br>");
+          //}
+
+          if (in_array($path[3], $project)) {
+              //same project
+              $p = array_search($path[3], $project);
+          } else {
               //another project
               $p++;
+          }
+          $project[$p] = $path[3];
+
+          //print("path3,path5 -->".$path[3]." - ".$path[5]."<br>");
+          $pjt = $path[3] . " - " . $path[5];
+          //print("path3,path5 -->".$pjt."<br>");
+          if (strcmp("$phase", "$pjt") != "0") {
+              //another phase; initialization
+              $project[$p] = $path[3];
+              $b = 0;
+              $phase = $pjt;
+              $feature = $path[6];
+              $a++;
+              $c = 0;
+              $plan_phase[$a][0][11] = 0; //init - filter count
+              $plan_phase[$a][$c][0] = $phase; //init - phase
+              $plan_tree_row[$a][$b][0] = $feature; //init - feature
+              $plan_tree_row[$a][$b][1] = $i; //feature start_row
+              $plan_tree_row[$a][$b][2] = 1; //init - # of feature tc
+              $test_id = $sheetData[$i][D];
+              $PD = LookupTestPD($test_id);
+              $plan_tree_row[$a][$b][3] = $PD; //feature PD
+
+              $plan_phase[$a][$c][1] = $PD;  //phase PD
+              $plan_phase[$a][$c][2] = 0; //init - Blocked
+              $plan_phase[$a][$c][3] = 0; //init - Passed
+              $plan_phase[$a][$c][4] = 0; //init - Failed
+              $plan_phase[$a][$c][5] = 0; //init - No run
+              $plan_phase[$a][$c][6] = 0; //init - In Progress
+              $plan_phase[$a][$c][7] = 0; //init - N/A
+              $plan_phase[$a][$c][8] = 0; //init - Blocked PD
+              $plan_phase[$a][$c][9] = 0; //init - No run + Inprogress PD
+              //$plan_phase[$a][10] =  0; //init - others
+
+              $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
+              $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
+              $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
+              $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
+              $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
+              $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
+              $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
+              $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
+              $plan_phase[$a][$c][2] = 0; //init - unattempted PDs
+              $plan_phase[$a][$c][10] = $path[6]; //init - filter
+              $c++;
+              $plan_phase[$a][0][11] = $plan_phase[$a][0][11] + 1;
+          } elseif (strcmp("$feature", "$path[6]") != "0") {
+              $found = 0;
+              for ($x = 0; $x < $c; $x++) {
+                  if($path[6] == $plan_phase[$a][$x][10]){
+                      $project[$p] = $path[3];
+                      //same phase, another feature
+                      $b++;
+                      //$start_row=$i;
+                      $feature = $path[6];
+
+                      $plan_tree_row[$a][$b][0] = $feature;
+                      $plan_tree_row[$a][$b][1] = $i;
+                      $plan_tree_row[$a][$b][2] = 1;
+                      $test_id = $sheetData[$i][D];
+                      $PD = LookupTestPD($test_id);
+                      $plan_tree_row[$a][$b][3] = $PD;
+                      $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
+                      $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
+                      $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
+                      $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
+                      $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
+                      $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
+                      $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
+                      $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
+
+                      $plan_phase[$a][$x][1] = $plan_phase[$a][$x][1] + $PD;
+                      //print("same phase/feature -->".$feature."<br>");
+
+                      $found = 1;
+                      $c = $x;
+                  }
+              }
+            if($found != 1){
+                $project[$p] = $path[3];
+                //same phase, another feature
+                $b++;
+                //$start_row=$i;
+                $feature = $path[6];
+
+                $plan_tree_row[$a][$b][0] = $feature;
+                $plan_tree_row[$a][$b][1] = $i;
+                $plan_tree_row[$a][$b][2] = 1;
+                $test_id = $sheetData[$i][D];
+                $PD = LookupTestPD($test_id);
+                $plan_tree_row[$a][$b][3] = $PD;
+                $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
+                $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
+                $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
+                $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
+                $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
+                $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
+                $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
+                $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
+
+                $plan_phase[$a][$c][1] = $plan_phase[$a][$c][1] + $PD;
+                $plan_phase[$a][$c][10] = $path[6]; //init - filter
+                $c++;
+                $plan_phase[$a][0][11] = $plan_phase[$a][0][11] + 1;
+                //print("same phase/feature -->".$feature."<br>");
             }
-            $project[$p] = $path[3]; 
-            
-            //print("path3,path5 -->".$path[3]." - ".$path[5]."<br>");   
-            $pjt = $path[3]." - ".$path[5];
-            //print("path3,path5 -->".$pjt."<br>");      
-            if ( strcmp("$phase","$pjt") != "0") {
-            //another phase; initialization
-                    $b=0;
-                    $phase = $pjt;
-                    $feature = $path[6];  
-                    $a++;
-                    $plan_phase[$a][0] =  $phase; //init - phase
-                    $plan_tree_row[$a][$b][0] = $feature; //init - feature
-                    $plan_tree_row[$a][$b][1] = $i; //feature start_row
-                    $plan_tree_row[$a][$b][2] = 1; //init - # of feature tc
-                      $test_id=$sheetData[$i][D];
-                      $PD=LookupTestPD($test_id);
-                    $plan_tree_row[$a][$b][3] = $PD; //feature PD
-                    
-                    $plan_phase[$a][1] =  $PD;  //phase PD
-                    $plan_phase[$a][2] =  0; //init - Blocked
-                    $plan_phase[$a][3] =  0; //init - Passed
-                    $plan_phase[$a][4] =  0; //init - Failed
-                    $plan_phase[$a][5] =  0; //init - No run
-                    $plan_phase[$a][6] =  0; //init - In Progress
-                    $plan_phase[$a][7] =  0; //init - N/A
-                    $plan_phase[$a][8] =  0; //init - Blocked PD
-                    $plan_phase[$a][9] =  0; //init - No run + Inprogress PD
-                    //$plan_phase[$a][10] =  0; //init - others          
-         
-                    $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
-                    $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
-                    $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
-                    $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
-                    $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
-                    $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
-                    $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
-                    $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
-                  $plan_phase[$a][2] =  0; //init - unattempted PDs                   
-            }elseif( strcmp("$feature","$path[6]") != "0"){
-            //same phase, another feature
-                    $b++;
-                    //$start_row=$i;
-                    $feature = $path[6]; 
-                    
-                    $plan_tree_row[$a][$b][0] = $feature;
-                    $plan_tree_row[$a][$b][1] = $i;
-                    $plan_tree_row[$a][$b][2] = 1;
-                      $test_id=$sheetData[$i][D];
-                      $PD=LookupTestPD($test_id);
-                    $plan_tree_row[$a][$b][3] = $PD; 
-                    $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
-                    $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
-                    $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
-                    $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
-                    $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
-                    $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
-                    $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
-                    $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
-                    
-                    $plan_phase[$a][1] =  $plan_phase[$a][1] + $PD;
-                    //print("same phase/feature -->".$feature."<br>");
-                    
-            }else{
-            //same phase, same featrue
-                $plan_tree_row[$a][$b][2] = $plan_tree_row[$a][$b][2] + 1;
-                  $test_id=$sheetData[$i][D];
-                  $PD=LookupTestPD($test_id);
-                $plan_tree_row[$a][$b][3] = $plan_tree_row[$a][$b][3] + $PD;
-                $plan_phase[$a][1] =  $plan_phase[$a][1] + $PD;
-            }
-             
-            switch ($sheetData[$i][E]) {
+          } else {
+              //same phase, same featrue
+              $found = 0;
+              for ($x = 0; $x < $c; $x++) {
+                  if ($path[6] == $plan_phase[$a][$x][10]) {
+                      $plan_tree_row[$a][$b][2] = $plan_tree_row[$a][$b][2] + 1;
+                      $test_id = $sheetData[$i][D];
+                      $PD = LookupTestPD($test_id);
+                      $plan_tree_row[$a][$b][3] = $plan_tree_row[$a][$b][3] + $PD;
+                      $plan_phase[$a][$x][1] = $plan_phase[$a][$x][1] + $PD;
+
+                      $found = 1;
+                      $c = $x;
+                  }
+              }
+              if ($found != 1) {
+                  $plan_tree_row[$a][$b][2] = $plan_tree_row[$a][$b][2] + 1;
+                  $test_id = $sheetData[$i][D];
+                  $PD = LookupTestPD($test_id);
+                  $plan_tree_row[$a][$b][3] = $plan_tree_row[$a][$b][3] + $PD;
+                  $plan_phase[$a][$c][1] = $plan_phase[$a][$c][1] + $PD;
+                  $plan_phase[$a][$c][10] = $path[6]; //init - filter
+                  $c++;
+                  $plan_phase[$a][0][11] = $plan_phase[$a][0][11] + 1;
+              }
+          }
+
+          switch ($sheetData[$i][E]) {
               case Blocked:
-                  $plan_phase[$a][2] =  $plan_phase[$a][2] + 1;
-                  $plan_phase[$a][8] =  $plan_phase[$a][8] + $PD;
+                  $plan_phase[$a][$c][2] = $plan_phase[$a][$c][2] + 1;
+                  $plan_phase[$a][$c][8] = $plan_phase[$a][$c][8] + $PD;
                   $plan_tree_row[$a][$b][4] = $plan_tree_row[$a][$b][4] + $PD;
                   $plan_tree_row[$a][$b][6] = $plan_tree_row[$a][$b][6] + 1;
                   break;
               case Passed:
-                  $plan_phase[$a][3] =  $plan_phase[$a][3] + 1;
+                  $plan_phase[$a][$c][3] = $plan_phase[$a][$c][3] + 1;
                   //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
                   $plan_tree_row[$a][$b][7] = $plan_tree_row[$a][$b][7] + 1;
                   break;
               case Failed:
-                  $plan_phase[$a][4] =  $plan_phase[$a][4] + 1;
+                  $plan_phase[$a][$c][4] = $plan_phase[$a][$c][4] + 1;
                   //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
                   $plan_tree_row[$a][$b][8] = $plan_tree_row[$a][$b][8] + 1;
                   break;
               case "No Run":
-                  $plan_phase[$a][5] =  $plan_phase[$a][5] + 1;
-                  $plan_phase[$a][9] =  $plan_phase[$a][9] + $PD;
+                  $plan_phase[$a][c][5] = $plan_phase[$a][c][5] + 1;
+                  $plan_phase[$a][c][9] = $plan_phase[$a][c][9] + $PD;
                   $plan_tree_row[$a][$b][5] = $plan_tree_row[$a][$b][5] + $PD;
                   $plan_tree_row[$a][$b][9] = $plan_tree_row[$a][$b][9] + 1;
                   break;
               case "Not Completed":
-                  $plan_phase[$a][6] =  $plan_phase[$a][6] + 1;
-                  $plan_phase[$a][9] =  $plan_phase[$a][9] + $PD;
+                  $plan_phase[$a][c][6] = $plan_phase[$a][c][6] + 1;
+                  $plan_phase[$a][c][9] = $plan_phase[$a][c][9] + $PD;
                   $plan_tree_row[$a][$b][5] = $plan_tree_row[$a][$b][5] + $PD;
                   $plan_tree_row[$a][$b][10] = $plan_tree_row[$a][$b][10] + 1;
                   break;
               case "N/A":
-                  $plan_phase[$a][7] =  $plan_phase[$a][7] + 1;
+                  $plan_phase[$a][c][7] = $plan_phase[$a][c][7] + 1;
                   //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
                   $plan_tree_row[$a][$b][11] = $plan_tree_row[$a][$b][11] + 1;
                   break;
-            }                                                                
+          }
+          $c = $plan_phase[$a][0][11];
+
+      }
+  }
+  else{
+          for ($i = 2; $i <= count($sheetData); $i++) {
+              $path = explode("\\", $sheetData[$i][A]);
+              //print("project -->".$path[3]."<br>");
+              //echo strcmp("$phase","$path[5]");
+              //if (array_search($path[3], $project)) {
+              //  print("project -->".$path[3]."<br>");
+              //}
+
+              if (in_array($path[3], $project)) {
+                  //same project
+                  $p = array_search($path[3], $project);
+              } else {
+                  //another project
+                  $p++;
+              }
+              $project[$p] = $path[3];
+
+              //print("path3,path5 -->".$path[3]." - ".$path[5]."<br>");
+              $pjt = $path[3] . " - " . $path[5];
+              //print("path3,path5 -->".$pjt."<br>");
+              if (strcmp("$phase", "$pjt") != "0") {
+                  //another phase; initialization
+                  $b = 0;
+                  $phase = $pjt;
+                  $feature = $path[6];
+                  $a++;
+                  $plan_phase[$a][0] = $phase; //init - phase
+                  $plan_tree_row[$a][$b][0] = $feature; //init - feature
+                  $plan_tree_row[$a][$b][1] = $i; //feature start_row
+                  $plan_tree_row[$a][$b][2] = 1; //init - # of feature tc
+                  $test_id = $sheetData[$i][D];
+                  $PD = LookupTestPD($test_id);
+                  $plan_tree_row[$a][$b][3] = $PD; //feature PD
+
+                  $plan_phase[$a][1] = $PD;  //phase PD
+                  $plan_phase[$a][2] = 0; //init - Blocked
+                  $plan_phase[$a][3] = 0; //init - Passed
+                  $plan_phase[$a][4] = 0; //init - Failed
+                  $plan_phase[$a][5] = 0; //init - No run
+                  $plan_phase[$a][6] = 0; //init - In Progress
+                  $plan_phase[$a][7] = 0; //init - N/A
+                  $plan_phase[$a][8] = 0; //init - Blocked PD
+                  $plan_phase[$a][9] = 0; //init - No run + Inprogress PD
+                  $plan_phase[$a][21] = $path[3];
+                  //$plan_phase[$a][10] =  0; //init - others
+
+                  $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
+                  $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
+                  $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
+                  $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
+                  $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
+                  $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
+                  $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
+                  $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
+                  $plan_phase[$a][2] = 0; //init - unattempted PDs
+              } elseif (strcmp("$feature", "$path[6]") != "0") {
+                  //same phase, another feature
+                  $b++;
+                  //$start_row=$i;
+                  $feature = $path[6];
+
+                  $plan_tree_row[$a][$b][0] = $feature;
+                  $plan_tree_row[$a][$b][1] = $i;
+                  $plan_tree_row[$a][$b][2] = 1;
+                  $test_id = $sheetData[$i][D];
+                  $PD = LookupTestPD($test_id);
+                  $plan_tree_row[$a][$b][3] = $PD;
+                  $plan_tree_row[$a][$b][4] = 0;  //init - [feature] Blocked PD
+                  $plan_tree_row[$a][$b][5] = 0;  //init - [feature] No run + Inprogress PD
+                  $plan_tree_row[$a][$b][6] = 0;  //init - [feature] - Blocked
+                  $plan_tree_row[$a][$b][7] = 0;  //init - [feature] - Passed
+                  $plan_tree_row[$a][$b][8] = 0;  //init - [feature] - Failed
+                  $plan_tree_row[$a][$b][9] = 0;  //init - [feature] - No run
+                  $plan_tree_row[$a][$b][10] = 0; //init - [feature] - In Pragress
+                  $plan_tree_row[$a][$b][11] = 0; //init - [feature] - N/A
+
+                  $plan_phase[$a][1] = $plan_phase[$a][1] + $PD;
+                  $plan_phase[$a][21] = $path[3];
+                  //print("same phase/feature -->".$feature."<br>");
+
+              } else {
+                  //same phase, same featrue
+                  $plan_tree_row[$a][$b][2] = $plan_tree_row[$a][$b][2] + 1;
+                  $test_id = $sheetData[$i][D];
+                  $PD = LookupTestPD($test_id);
+                  $plan_tree_row[$a][$b][3] = $plan_tree_row[$a][$b][3] + $PD;
+                  $plan_phase[$a][1] = $plan_phase[$a][1] + $PD;
+                  $plan_phase[$a][21] = $path[3];
+              }
+
+              switch ($sheetData[$i][E]) {
+                  case Blocked:
+                      $plan_phase[$a][2] = $plan_phase[$a][2] + 1;
+                      $plan_phase[$a][8] = $plan_phase[$a][8] + $PD;
+                      $plan_tree_row[$a][$b][4] = $plan_tree_row[$a][$b][4] + $PD;
+                      $plan_tree_row[$a][$b][6] = $plan_tree_row[$a][$b][6] + 1;
+                      break;
+                  case Passed:
+                      $plan_phase[$a][3] = $plan_phase[$a][3] + 1;
+                      //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
+                      $plan_tree_row[$a][$b][7] = $plan_tree_row[$a][$b][7] + 1;
+                      break;
+                  case Failed:
+                      $plan_phase[$a][4] = $plan_phase[$a][4] + 1;
+                      //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
+                      $plan_tree_row[$a][$b][8] = $plan_tree_row[$a][$b][8] + 1;
+                      break;
+                  case "No Run":
+                      $plan_phase[$a][5] = $plan_phase[$a][5] + 1;
+                      $plan_phase[$a][9] = $plan_phase[$a][9] + $PD;
+                      $plan_tree_row[$a][$b][5] = $plan_tree_row[$a][$b][5] + $PD;
+                      $plan_tree_row[$a][$b][9] = $plan_tree_row[$a][$b][9] + 1;
+                      break;
+                  case "Not Completed":
+                      $plan_phase[$a][6] = $plan_phase[$a][6] + 1;
+                      $plan_phase[$a][9] = $plan_phase[$a][9] + $PD;
+                      $plan_tree_row[$a][$b][5] = $plan_tree_row[$a][$b][5] + $PD;
+                      $plan_tree_row[$a][$b][10] = $plan_tree_row[$a][$b][10] + 1;
+                      break;
+                  case "N/A":
+                      $plan_phase[$a][7] = $plan_phase[$a][7] + 1;
+                      //$plan_phase[$a][10] =  $plan_phase[$a][10] + $PD;
+                      $plan_tree_row[$a][$b][11] = $plan_tree_row[$a][$b][11] + 1;
+                      break;
+              }
+          }
+      }
+//*****************************************************printing table************************************************************************
+$total_phase = count($plan_tree_row,0);
+$total_project = count($project);
+$project_name = $project[0];
+for ($i=1; $i<$total_project; $i++){
+    $project_name = $project_name." / ".$project[$i];
 }
 
-  $total_phase = count($plan_tree_row,0);
-  $total_project = count($project);
+switch ($_GET['filter']) {
+    case 1:
+        break;
+    case 2:
+        break;
+    case 3:
+        break;
+    case 4:
 
-  $project_name = $project[0];
-  for ($i=1; $i<$total_project; $i++){ 
-      $project_name = $project_name." / ".$project[$i];
-  }
+        for($i = 0; $i < $total_phase; $i++) {
+           // for ($j = 0; $j < $plan_phase[$i][$j][11]; $j++) {
+                //echo $plan_phase[$i][$j][10];
+                              echo $plan_phase[$i][0][0] . "            " . $plan_phase[$i][0][10] . "    " . $plan_phase[$i][0][11].  "            " . $plan_phase[$i][1][10] . "    " . $plan_phase[$i][0][11]. "            ". $plan_phase[$i][2][10] . "    " . $plan_phase[$i][0][11]. "            ". $plan_phase[$i][3][10]. "    " . $plan_phase[$i][0][11]. "     ". $plan_phase[$i][4][10]. "       " . $plan_phase[$i][0][11]. "\n";
 
+            //}
+        }
 
-//print("project_name -->$project_name"."<br>");
+        echo '<div class="ProTable" > ';
+        echo "
+    <table>        
+      <tr>
+        <td rowspan='2'>$project_name</td>
+        <td colspan='6'>Number of Test Cases</td>
+        <td colspan='4'>Status Percentage</td>
+        <td colspan='2'>Estimated PDs</td>
+      </tr>
+      <tr>
+        <td>Planned</td>
+        <td>Blocked</td>
+        <td>Passed</td>
+        <td>Failed</td>
+        <td>No Run</td>
+        <td>In Progress</td>
+        <td>% Blocked</td>
+        <td>% Attempted</td>
+        <td>% Failed</td>
+        <td>% Passed</td>
+        <td>Blocked PDs</td>
+        <td>No Run/In Progess PDs</td>
+        <td>Filter</td>
+        <td>Filter Number</td>
+      </tr>
+    ";
+        for ($i=0; $i<$total_phase; $i++){
+                for ($j = 0; $j < $plan_phase[$i][0][11]; $j++){
+                $tc_planned = $plan_phase[$i][$j][2] + $plan_phase[$i][$j][3] + $plan_phase[$i][$j][4] + $plan_phase[$i][$j][5] + $plan_phase[$i][$j][6] + $plan_phase[$i][$j][7];
+                $tc_rate_blocked = round($plan_phase[$i][$j][2] / $tc_planned, 4) * 100;
+                $tc_rate_attempted = round(($tc_planned - $plan_phase[$i][$j][2] - $plan_phase[$i][$j][5] - $plan_phase[$i][$j][6]) / $tc_planned, 4) * 100;
+                $tc_rate_failed = round($plan_phase[$i][$j][4] / $tc_planned, 4) * 100;
+                $tc_rate_passed = round($plan_phase[$i][$j][3] / $tc_planned, 4) * 100;
+                echo "
+        <tr>
+          <td>" . $plan_phase[$i][$j][0] . "</td>
+          <td>" . $tc_planned . "</td>
+          <td>" . $plan_phase[$i][$j][2] . "</td>
+          <td>" . $plan_phase[$i][$j][3] . "</td> 
+          <td>" . $plan_phase[$i][$j][4] . "</td> 
+          <td>" . $plan_phase[$i][$j][5] . "</td> 
+          <td>" . $plan_phase[$i][$j][6] . "</td> 
+          <td>" . $tc_rate_blocked . "%" . "</td>
+          <td>" . $tc_rate_attempted . "%" . "</td>
+          <td>" . $tc_rate_failed . "%" . "</td>
+          <td>" . $tc_rate_passed . "%" . "</td>
+          <td>" . $plan_phase[$i][$j][8] . "</td>
+          <td>" . $plan_phase[$i][$j][9] . "</td>           
+          <td>" . $plan_phase[$i][$j][10] . "</td>      
+          <td>" . $plan_phase[$i][$j][11] . "</td>      
+      ";
+            }
+        }
+        echo "</table>";
+        echo "</div >";
+        break;
+    default:
 
-//print("phase_feature_num -->$phase_feature_num"."<br>");
-echo '<div class="ProTable" > ';
-   echo "
+        echo '<div class="ProTable" > ';
+        echo "
     <table>        
       <tr>
         <td rowspan='2'>$project_name</td>
@@ -378,14 +651,14 @@ echo '<div class="ProTable" > ';
         <td>No Run/In Progess PDs</td>
       </tr>
     ";
-    
-for ($i=0; $i<$total_phase; $i++){ 
-    $tc_planned =  $plan_phase[$i][2] + $plan_phase[$i][3] + $plan_phase[$i][4] + $plan_phase[$i][5] + $plan_phase[$i][6] + $plan_phase[$i][7];
-    $tc_rate_blocked = round($plan_phase[$i][2] / $tc_planned, 4) * 100;
-    $tc_rate_attempted =  round(( $tc_planned -  $plan_phase[$i][2] -$plan_phase[$i][5] -  $plan_phase[$i][6]) / $tc_planned , 4) * 100;
-    $tc_rate_failed =  round($plan_phase[$i][4]  / $tc_planned, 4) * 100;
-    $tc_rate_passed =  round($plan_phase[$i][3]  / $tc_planned, 4) * 100;
-    echo "
+
+        for ($i=0; $i<$total_phase; $i++){
+            $tc_planned =  $plan_phase[$i][2] + $plan_phase[$i][3] + $plan_phase[$i][4] + $plan_phase[$i][5] + $plan_phase[$i][6] + $plan_phase[$i][7];
+            $tc_rate_blocked = round($plan_phase[$i][2] / $tc_planned, 4) * 100;
+            $tc_rate_attempted =  round(( $tc_planned -  $plan_phase[$i][2] -$plan_phase[$i][5] -  $plan_phase[$i][6]) / $tc_planned , 4) * 100;
+            $tc_rate_failed =  round($plan_phase[$i][4]  / $tc_planned, 4) * 100;
+            $tc_rate_passed =  round($plan_phase[$i][3]  / $tc_planned, 4) * 100;
+            echo "
         <tr>
           <td>".$plan_phase[$i][0]."</td>
           <td>".$tc_planned."</td>
@@ -401,9 +674,15 @@ for ($i=0; $i<$total_phase; $i++){
           <td>".$plan_phase[$i][8]."</td>
           <td>".$plan_phase[$i][9]."</td>                
       ";
+        }
+        echo "</table>";
+        echo "</div >";
+        break;      
 }
- echo "</table>";
-echo "</div >";     
+
+//**************************************************************printing table*******************************************************************************************
+
+//*************************************************************printing pie chart****************************************************************************************
 /*
 for ($i=0; $i<$total_phase; $i++){
    for ($j=0; $j<$phase_feature_num; $j++){
@@ -413,47 +692,51 @@ for ($i=0; $i<$total_phase; $i++){
   */
  # <div id="container" style="width: 550px; height: 400px; margin: 0 auto"></div>
 ?>
-<script type="text/javascript">
-  /********graph********/
-  <?php
-   for ($i=0; $i<$total_phase; $i++){
-   Pie_start();
-   Pie_data($plan_phase[$i][3], $plan_phase[$i][4], $plan_phase[$i][2], $plan_phase[$i][5], $plan_phase[$i][6]);
-    
-   // Radialize the colors
-   RadColors($plan_phase[$i][0]);
-   Pie_done($i);
-   }   
-   ?>
-   /********graph********/ 
-</script>
 
-<?php
-/*
-//for ($i=0; $i<$total_phase; $i++){
-//{
-  echo '<div id="pie_chart';
-  echo $i;
-  echo '" style="width: 550px; height: 400px; margin: 0 auto; float:right;">';
-    echo '</div>';
-}
 
-*/
+    <script type="text/javascript">
+        /********graph********/
+        <?php
+        for ($i=0; $i<$total_phase; $i++){
+            Pie_start();
+            Pie_data($plan_phase[$i][3], $plan_phase[$i][4], $plan_phase[$i][2], $plan_phase[$i][5], $plan_phase[$i][6]);
+
+            // Radialize the colors
+            RadColors($plan_phase[$i][0]);
+            Pie_done($i);
+        }
+        ?>
+        /********graph********/
+    </script>
+
+    <?php
+    /*
+    //for ($i=0; $i<$total_phase; $i++){
+    //{
+      echo '<div id="pie_chart';
+      echo $i;
+      echo '" style="width: 550px; height: 400px; margin: 0 auto; float:right;">';
+        echo '</div>';
+    }
+
+    */
+    ?>
+    <div style="width: 550px; height: 400px; margin: 0 auto; float:right;">
+        <?php
+        for ($i=0; $i<$total_phase; $i++){
+            echo '<div id="pie_chart';
+            echo $i;
+            echo '" style="width: 550px; height: 400px; margin: 0 auto; float:right;">';
+            echo '</div>';
+        }
 ?>
-<div style="width: 550px; height: 400px; margin: 0 auto; float:right;">
-<?php
-  for ($i=0; $i<$total_phase; $i++){
-    echo '<div id="pie_chart';
-    echo $i;
-    echo '" style="width: 550px; height: 400px; margin: 0 auto; float:right;">';
-    echo '</div>';
-  }
-?>
+    </div>
 
-</div>
-       
-<div id="qaContent" style=" float:left;">
+
+    <div id="qaContent" style=" float:left;">
+
 <?php
+//*********************************************printing accordion***************************************************************
 for ($i=0; $i<$total_phase; $i++){
   echo '<ul class="accordionPart"> ';
   echo '<li>';
@@ -475,7 +758,7 @@ for ($i=0; $i<$total_phase; $i++){
     echo '</font>';
     echo ' )'; 
   
-  
+  //ooo
   echo '</div>';
   $phase_feature_num = count($plan_tree_row[$i],0);
   for ($j=0; $j<$phase_feature_num; $j++){
@@ -563,10 +846,5 @@ for ($i=0; $i<$total_phase; $i++){
 //print_r($plan_tree_row); 
 // print_r($project);
 ?> 
-</div>
-
- 
-</body>
-</html>
 
 
