@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="generator" content="PSPad editor" />
-<meta name="Author" content="Poki Kuo" />
+<meta name="Author" content="Prasant Kalidindi" />
 <meta name="Keywords" content="" />
 <meta name="Description" content="" />
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -56,30 +56,30 @@ ul, li {
 </style>
 <script type="text/javascript">
 	$(function(){
-		// À° div.qa_title ¥[¤W hover ¤Î click ¨Æ¥ó
-		// ¦P®É§â¥S§Ì¤¸¯À div.qa_content ÁôÂÃ°_¨Ó
+		// ï¿½ï¿½ div.qa_title ï¿½[ï¿½W hover ï¿½ï¿½ click ï¿½Æ¥ï¿½
+		// ï¿½Pï¿½É§ï¿½Sï¿½Ì¤ï¿½ï¿½ï¿½ div.qa_content ï¿½ï¿½ï¿½Ã°_ï¿½ï¿½
 		$('#qaContent ul.accordionPart li div.qa_title').hover(function(){
 			$(this).addClass('qa_title_on');
 		}, function(){
 			$(this).removeClass('qa_title_on');
 		}).click(function(){
-			// ·íÂI¨ì¼ÐÃD®É¡Ahide or unhide
+			// ï¿½ï¿½ï¿½Iï¿½ï¿½ï¿½ï¿½Dï¿½É¡Ahide or unhide
 			$(this).next('div.qa_content').slideToggle();
 		}).siblings('div.qa_content').hide();
 
-		// ¥þ³¡®i¶}
+		// ï¿½ï¿½ï¿½ï¿½ï¿½iï¿½}
 		$('#qaContent .qa_showall').click(function(){
 			$('#qaContent ul.accordionPart li div.qa_content').slideDown();
 			return false;
 		});
 
-		// ¥þ³¡ÁôÂÃ
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 		$('#qaContent .qa_hideall').click(function(){
 			$('#qaContent ul.accordionPart li div.qa_content').slideUp();
 			return false;
 		});
 
-		// Ãö³¬
+		// ï¿½ï¿½ï¿½ï¿½
 		$('#qaContent .close_qa').click(function(){
 			$(this).parents('.qa_content').prev().click();
 			return false;
