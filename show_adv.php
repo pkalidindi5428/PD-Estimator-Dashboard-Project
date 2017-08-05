@@ -985,6 +985,124 @@ switch ($_GET['filter']) {
         echo "</div >";
         break;      
 }
+//************************************************printing table*****************************************
+?>
 
-//**************************************************************printing table*******************************************************************************************
+<div id="qaContent" style=" float:left;">
+    <?php
+    //********************************************printing accordion*********************************************
+    for ($i=0; $i<$total_phase; $i++){
+        echo '<ul class="accordionPart"> ';
+        echo '<li>';
+        echo '<div class="qa_title_A">';
+        //echo  $plan_phase[$i][0].$plan_phase[$i][1] ;
+        print($plan_phase[$i][0]." ( ");
+        echo '<font color="#000000">';
+        $tc_planned =  $plan_phase[$i][2] + $plan_phase[$i][3] + $plan_phase[$i][4] + $plan_phase[$i][5] + $plan_phase[$i][6] + $plan_phase[$i][7];
+        print("Total = ".$tc_planned." [".$plan_phase[$i][1]."]");  //total
+        echo '</font>';
+        echo ' / ';
+        echo '<font color="#AC58FA">';
+        $tc_norun = $plan_phase[$i][5]+$plan_phase[$i][6];
+        print("No Run = ".$tc_norun." [".$plan_phase[$i][9]."]"); //No run + in progress
+        echo '</font>';
+        echo ' / ';
+        echo '<font color="#FF8000">';
+        print(" Blocked = ".$plan_phase[$i][2]." [".$plan_phase[$i][8]."]"); //blocked
+        echo '</font>';
+        echo ' )';
+
+
+        echo '</div>';
+        $phase_feature_num = count($plan_tree_row[$i],0);
+        for ($j=0; $j<$phase_feature_num; $j++){
+
+
+            $feature_tc_norun = $plan_tree_row[$i][$j][9]+$plan_tree_row[$i][$j][10];
+
+            echo '<div class="qa_title_B">';
+            print($plan_tree_row[$i][$j][0]."( ");
+            echo '<font color="#000000">';
+            print("Total = ".$plan_tree_row[$i][$j][2]." [".$plan_tree_row[$i][$j][3]."]");  //total
+            echo '</font>';
+            echo ' / ';
+            echo '<font color="#AC58FA">';
+            print("No Run = ".$feature_tc_norun." [".$plan_tree_row[$i][$j][5]."]"); //No run + in progress
+            echo '</font>';
+            echo ' / ';
+            echo '<font color="#FF8000">';
+            print(" Blocked = ".$plan_tree_row[$i][$j][6]." [".$plan_tree_row[$i][$j][4]."]"); //blocked
+            echo '</font>';
+            echo ' )';
+            echo '</div>';
+            echo '<div class="qa_content">';
+            echo	'<div id="TableP">';
+            echo '<div class="menuTable">';
+            echo '<table border="1">
+    <thead>
+      <tr>
+        <th>Test Case</th>
+        <th>Test Status</th>
+        <th>PD</th>
+      </tr>
+    </thead>
+    <tbody>
+    ';
+            for ( $k=0; $k < $plan_tree_row[$i][$j][2]; $k++){
+                $base_start_row=$plan_tree_row[$i][$j][1] + $k;
+                $test_id=$sheetData[$base_start_row][D];
+                //$feature_tc_planned =  $plan_tree_row[$i][$j][2];
+                $PD = LookupTestPD($test_id);
+
+                $short_path = substr($sheetData[$base_start_row][A], indexStr($sheetData[$base_start_row][A],"\\", 7)); //short_path
+                $test_set_name = $sheetData[$base_start_row][B];
+                //color
+                switch ($sheetData[$base_start_row][E]) {
+                    case Blocked:
+                        $color="#F4FA58";
+                        break;
+                    case Passed:
+                        $color="#81F781";
+                        break;
+                    case Failed:
+                        $color="#FA5882";
+                        break;
+                    case "No Run":
+                        $color="#FFFFFF";
+                        break;
+                    case "Not Completed":
+                        $color="#81F7F3";
+                        break;
+                    case "N/A":
+                        $color="#FFFFFF";
+                        break;
+                }
+
+                echo "
+        <tr align='center'>
+          <td title='$short_path.$test_set_name'>".$sheetData[$base_start_row][C]."</td>
+          <td bgcolor='$color' title='$short_path.$test_set_name'>".$sheetData[$base_start_row][E]."</td>
+          <td title='$short_path.$test_set_name'>".$PD."</td>          
+      ";
+            }
+            echo "</tbody>";
+            echo "</table>";
+            echo '<a href="#" class="close_qa">Hide</a>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+        }
+        echo '</li>';
+        echo '</ul>';
+    }
+
+    //print_r($plan_phase);
+    //print_r($plan_tree_row);
+    // print_r($project);
+    //*********************************printing accordion****************************************************
+    ?>
+</div>
+
+</body>
+</html>
 
